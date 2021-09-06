@@ -4,9 +4,11 @@ import com.example.qwitter.domain.Role;
 import com.example.qwitter.domain.User;
 import com.example.qwitter.repos.UserRepo;
 import com.sun.xml.internal.ws.api.ha.StickyFeature;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
@@ -16,16 +18,22 @@ import java.util.stream.Collectors;
 @Service
 public class UserService implements UserDetailsService {
     private final UserRepo userRepo;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepo userRepo, MailSenderService mailSenderService) {
+    public UserService(UserRepo userRepo, MailSenderService mailSenderService,@Lazy PasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
         this.mailSenderService = mailSenderService;
+        this.passwordEncoder = passwordEncoder;
     }
     private final MailSenderService mailSenderService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepo.findByUsername(username);
+        User user = userRepo.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found");
+        }
+        return user;
     }
     public boolean addUser(User user) {
         User userFromDb = userRepo.findByUsername(user.getUsername());
@@ -37,6 +45,8 @@ public class UserService implements UserDetailsService {
         user.setActive(false);
         user.setRoles(Collections.singleton(Role.USER));
         user.setActivationCode(UUID.randomUUID().toString());
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         userRepo.save(user);
 
         sendMessage(user);
@@ -100,7 +110,7 @@ public class UserService implements UserDetailsService {
             }
         }
         if (!ObjectUtils.isEmpty(password)) {
-            user.setPassword(password);
+            user.setPassword(passwordEncoder.encode(password));
         }
         userRepo.save(user);
         if(isEmailChanged) {
