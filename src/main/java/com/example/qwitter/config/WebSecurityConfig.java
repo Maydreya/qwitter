@@ -1,4 +1,5 @@
 package com.example.qwitter.config;
+
 import com.example.qwitter.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +22,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final PasswordEncoder passwordEncoder;
 
-    public WebSecurityConfig(UserService userService,@Lazy PasswordEncoder passwordEncoder) {
+    public WebSecurityConfig(UserService userService, @Lazy PasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -30,7 +31,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public PasswordEncoder getPasswordEncoder() {
         return new BCryptPasswordEncoder(8);
-    };
+    }
+
+    ;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -42,6 +45,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                     .formLogin()
                     .loginPage("/login")
                     .permitAll()
+                .and()
+                    .rememberMe()
                 .and()
                     .logout()
                     .permitAll();
